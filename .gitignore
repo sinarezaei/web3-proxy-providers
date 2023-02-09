@@ -1,0 +1,17 @@
+.idea
+/build
+/dist
+__pycache__/
+setup.txt
+*/sample.py
+/.eggs
+web3_proxy_providers/_sample_subscription.py
+
+# Compiled python modules.
+*.pyc
+
+# Setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info

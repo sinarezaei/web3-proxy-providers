@@ -1,0 +1,5 @@
+web3>=6.0.0b9
+websockets==10.4
+aiohttp>=3.8.3
+aiohttp-socks>=0.7.1
+PySocks>=1.7.1
