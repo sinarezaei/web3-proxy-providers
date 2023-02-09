@@ -101,6 +101,11 @@ if __name__ == '__main__':
 ### Async Websocket Provider with Proxy with Subscription support
 Use `AsyncSubscriptionWebsocketWithProxyProvider` class to connect to a websocket RPC with asyncio using a proxy. both http proxy and socks proxy are supported
 
+Learn more about realtime events and eth_subscribe:
+* [Ethereum/Geth Docs](https://geth.ethereum.org/docs/interacting-with-geth/rpc/pubsub)
+* [Alchemy Docs](https://docs.alchemy.com/reference/eth-subscribe-polygon)
+
+
 ```python
 import asyncio
 from Crypto.Hash import keccak
