@@ -7,7 +7,7 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 setuptools.setup(name='web3-proxy-providers',
-                 version='0.1',
+                 version='0.2',
                  author='Sina Rezaei',
                  author_email='sinarezaei1991@gmail.com',
                  long_description_content_type="text/markdown",
