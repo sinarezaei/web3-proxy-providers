@@ -161,15 +161,17 @@ class AsyncSubscriptionWebsocketProvider(AsyncSubscriptionJSONBaseProvider):
     def __init__(
             self,
             loop: asyncio.AbstractEventLoop,
-            websocket_endpoint_uri: Optional[Union[URI, str]] = None,
+            endpoint_uri: Optional[Union[URI, str]] = None,
             websocket_kwargs: Optional[Any] = None,
             websocket_timeout: int = DEFAULT_WEBSOCKET_TIMEOUT,
+            proxy: Optional[Tuple[ProxyType, str, int]] = None,
     ) -> None:
-        self.websocket_endpoint_uri = URI(websocket_endpoint_uri)
+        self.endpoint_uri = URI(endpoint_uri)
         self.websocket_timeout = websocket_timeout
-        if self.websocket_endpoint_uri is None:
-            self.websocket_endpoint_uri = get_default_endpoint()
+        if self.endpoint_uri is None:
+            self.endpoint_uri = get_default_endpoint()
         self.loop = loop
+        self.proxy = proxy
         websocket_kwargs = websocket_kwargs or {}
         found_restricted_keys = set(websocket_kwargs.keys()).intersection(
             RESTRICTED_WEBSOCKET_KWARGS
@@ -191,12 +193,21 @@ class AsyncSubscriptionWebsocketProvider(AsyncSubscriptionJSONBaseProvider):
         super().__init__()
 
     def __str__(self) -> str:
-        return "WS connection {0}".format(self.websocket_endpoint_uri)
+        return "WS connection {0}".format(self.endpoint_uri)
 
     async def initialize(self):
         self.logger.debug("Initializing")
+
+        if self.proxy:
+            netloc = urlparse(self.endpoint_uri).netloc
+            proxy = socks.socksocket()
+            proxy.set_proxy(PROXY_TYPE_TO_INT_MAP[self.proxy[0]], self.proxy[1], self.proxy[2])
+            proxy.connect((netloc, 443))
+            self._websocket_kwargs['sock'] = proxy
+            self._websocket_kwargs['server_hostname'] = netloc
+
         self.ws = await websockets.connect(
-            uri=self.websocket_endpoint_uri, loop=self.loop, **self._websocket_kwargs
+            uri=self.endpoint_uri, loop=self.loop, **self._websocket_kwargs
         )
         self.loop.create_task(self._read_websocket_messages())
         self._initialized = True
@@ -246,7 +257,7 @@ class AsyncSubscriptionWebsocketProvider(AsyncSubscriptionJSONBaseProvider):
             await self.initialize()
         request_id, request_data = self.encode_rpc_request(method, params)
         self.logger.debug("Making request WebSocket. URI: %s, "
-                          "Method: %s, request Id: %s", self.websocket_endpoint_uri, method, request_id)
+                          "Method: %s, request Id: %s", self.endpoint_uri, method, request_id)
 
         future = self.loop.create_future()
         self._pending_futures[request_id] = future
@@ -291,15 +302,10 @@ class AsyncSubscriptionWebsocketWithProxyProvider(AsyncSubscriptionWebsocketProv
             websocket_timeout: int = DEFAULT_WEBSOCKET_TIMEOUT
     ):
         websocket_kwargs = websocket_kwargs or {}
-        netloc = urlparse(endpoint_uri).netloc
-        proxy = socks.socksocket()
-        proxy.set_proxy(PROXY_TYPE_TO_INT_MAP[proxy_type], proxy_host, proxy_port)
-        proxy.connect((netloc, 443))
-        websocket_kwargs['sock'] = proxy
-        websocket_kwargs['server_hostname'] = netloc
         super().__init__(
             loop,
             endpoint_uri,
             websocket_kwargs,
-            websocket_timeout
+            websocket_timeout,
+            (proxy_type, proxy_host, proxy_port)
         )
